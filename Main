@@ -1,0 +1,124 @@
+local CameraEffect = {}
+
+function CameraEffect:BindToAnimation(config, animation)
+	config.CameraPart.CameraBone.Part0 = config.HumanoidRoot
+	config.CameraPart.CameraBone.Part1 = config.CameraPart
+	config.CameraPart.Parent = game:GetService("Players").LocalPlayer
+	game:GetService("Workspace").CurrentCamera.CameraType = Enum.CameraType.Scriptable
+	config.CameraPart:LoadAnimation(animation):Play()
+	local conn = game:GetService("RunService").RenderStepped:Connect(function()
+		game:GetService("Workspace").CurrentCamera.CFrame = config.CameraPart.CFrame
+	end)
+	task.delay(config.DelayInSeconds, function()
+		conn:Disconnect()
+		config.CameraPart:Destroy()
+		game:GetService("Workspace").CurrentCamera.CameraType = Enum.CameraType.Custom
+	end)
+	return config.CameraPart
+end
+
+function CameraEffect:BindToSetting(script, config)
+	game:GetService("Workspace").CurrentCamera.CameraType = Enum.CameraType.Scriptable
+	local t = 0
+	local conn
+	local anim = script:FindFirstChild("Camera")[config.Settings]
+	local initial = game:GetService("Workspace").CurrentCamera.CFrame
+	conn = game:GetService("RunService").RenderStepped:Connect(function(dt)
+		t += dt * 60
+		local frame = anim.Frames:FindFirstChild(tostring(math.ceil(t)))
+		if not frame then
+			conn:Disconnect()
+			game:GetService("Players").LocalPlayer.Humanoid.AutoRotate = true
+			game:GetService("Workspace").CurrentCamera.CameraType = Enum.CameraType.Custom
+			game:GetService("Workspace").CurrentCamera.CFrame = initial
+			return
+		end
+		game:GetService("Players").LocalPlayer.Humanoid.AutoRotate = false
+		game:GetService("Workspace").CurrentCamera.CFrame = config.HumanoidRoot.CFrame * CFrame.new(0, -2, 0) * frame.Value
+	end)
+end
+
+function CameraEffect:Contrast(duration)
+	Instance.new("BlurEffect", game:GetService("Lighting")).Size = 24
+	Instance.new("ColorCorrectionEffect", game:GetService("Lighting")).Brightness = -0.5
+	game:GetService("Lighting").ColorCorrectionEffect.Contrast = 1
+	game:GetService("Lighting").ColorCorrectionEffect.Saturation = -1
+
+	game:GetService("TweenService"):Create(
+		game:GetService("Lighting").BlurEffect,
+		TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+		{ Size = 0 }
+	):Play()
+
+	game:GetService("TweenService"):Create(
+		game:GetService("Lighting").ColorCorrectionEffect,
+		TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+		{ Brightness = 0, Contrast = 0, Saturation = 0 }
+	):Play()
+
+	game:GetService("Debris"):AddItem(game:GetService("Lighting").BlurEffect, duration)
+	game:GetService("Debris"):AddItem(game:GetService("Lighting").ColorCorrectionEffect, duration)
+end
+
+function CameraEffect:CinematicCamera(script, duration)
+	local gui = script:FindFirstChild("Interface"):Clone()
+	gui.Parent = game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui")
+	game:GetService("TweenService"):Create(gui.Top, TweenInfo.new(0.3, Enum.EasingStyle.Cubic), { Size = UDim2.new(1, 0, 0, 40) }):Play()
+	game:GetService("TweenService"):Create(gui.Bottom, TweenInfo.new(0.3, Enum.EasingStyle.Cubic), { Size = UDim2.new(1, 0, 0, -40) }):Play()
+	task.delay(duration, function()
+		game:GetService("TweenService"):Create(gui.Top, TweenInfo.new(0.3, Enum.EasingStyle.Cubic), { Size = UDim2.new(1, 0, 0, 0) }):Play()
+		game:GetService("TweenService"):Create(gui.Bottom, TweenInfo.new(0.3, Enum.EasingStyle.Cubic), { Size = UDim2.new(1, 0, 0, 0) }):Play()
+	end)
+end
+
+function CameraEffect:ImpactFrame(duration)
+	local effect = Instance.new("ColorCorrectionEffect")
+	effect.Contrast = -35
+	effect.Saturation = -1
+	effect.Parent = game:GetService("Lighting")
+	task.delay(duration, function()
+		effect:Destroy()
+	end)
+end
+
+function CameraEffect:ColorCorrection(values, duration, tweenTime)
+	local correction = game:GetService("Lighting"):FindFirstChild("ColorCorrection")
+	game:GetService("TweenService"):Create(correction, TweenInfo.new(tweenTime, Enum.EasingStyle.Quint), {
+		Brightness = values.Brightness,
+		Contrast = values.Contrast,
+		Saturation = values.Saturation,
+		TintColor = values.Tint,
+	}):Play()
+	local original = {
+		Brightness = correction.Brightness,
+		Contrast = correction.Contrast,
+		Saturation = correction.Saturation,
+		Tint = correction.TintColor
+	}
+	task.delay(duration, function()
+		game:GetService("TweenService"):Create(correction, TweenInfo.new(tweenTime, Enum.EasingStyle.Quint), {
+			Brightness = original.Brightness,
+			Contrast = original.Contrast,
+			Saturation = original.Saturation,
+			TintColor = original.Tint
+		}):Play()
+	end)
+end
+
+function CameraEffect:Blindness(script, fadeTime, duration)
+	local gui = script:FindFirstChild("Blind"):Clone()
+	gui.Parent = game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui")
+	task.spawn(function()
+		game:GetService("TweenService"):Create(gui.Back, TweenInfo.new(fadeTime, Enum.EasingStyle.Quart, Enum.EasingDirection.InOut), {
+			Transparency = 0,
+		}):Play()
+		task.wait(duration)
+		game:GetService("TweenService"):Create(gui.Back, TweenInfo.new(fadeTime * 1.5, Enum.EasingStyle.Quart, Enum.EasingDirection.InOut), {
+			Transparency = 1,
+		}):Play()
+		task.wait(fadeTime * 1.5)
+		gui:Destroy()
+	end)
+end
+
+return CameraEffect
