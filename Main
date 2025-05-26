@@ -121,4 +121,19 @@ function CameraEffect:Blindness(script, fadeTime, duration)
 	end)
 end
 
+function CameraEffect:ColorCorrect(tintColor, duration)
+    local correction = game:GetService("Lighting"):FindFirstChild("ColorCorrection")
+    game:GetService("TweenService"):Create(correction, TweenInfo.new(0.25, Enum.EasingStyle.Circular), {
+        TintColor = tintColor,
+    }):Play()
+
+    local originalTint = correction.TintColor
+
+    task.delay(duration, function()
+        game:GetService("TweenService"):Create(correction, TweenInfo.new(0.25, Enum.EasingStyle.Cubic), {
+            TintColor = originalTint,
+        }):Play()
+    end)
+end
+
 return CameraEffect
