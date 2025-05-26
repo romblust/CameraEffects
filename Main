@@ -1,20 +1,20 @@
 local CameraEffect = {}
 
 function CameraEffect:BindToAnimation(config, animation)
-	config.CameraPart.CameraBone.Part0 = config.HumanoidRoot
-	config.CameraPart.CameraBone.Part1 = config.CameraPart
-	config.CameraPart.Parent = game:GetService("Players").LocalPlayer
+	config.CameraBone.Part0 = config.HumanoidRoot
+	config.CameraBone.Part1 = config
+	config.Parent = game:GetService("Players").LocalPlayer
 	game:GetService("Workspace").CurrentCamera.CameraType = Enum.CameraType.Scriptable
-	config.CameraPart:LoadAnimation(animation):Play()
+	config:LoadAnimation(animation):Play()
 	local conn = game:GetService("RunService").RenderStepped:Connect(function()
-		game:GetService("Workspace").CurrentCamera.CFrame = config.CameraPart.CFrame
+		game:GetService("Workspace").CurrentCamera.CFrame = config.CFrame
 	end)
 	task.delay(config.DelayInSeconds, function()
 		conn:Disconnect()
-		config.CameraPart:Destroy()
+		config:Destroy()
 		game:GetService("Workspace").CurrentCamera.CameraType = Enum.CameraType.Custom
 	end)
-	return config.CameraPart
+	return config
 end
 
 function CameraEffect:BindToSetting(script, config)
